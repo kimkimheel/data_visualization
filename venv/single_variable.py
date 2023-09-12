@@ -77,16 +77,31 @@ def compare_hist_diagram_plus(data, col_name, bin_list):
 
 
 # 条形图_1
-def super_count_plot(data,col_name,color_index=0,order_list=None):
+def super_count_plot(data, col_name, color_index=0, order_list=None, if_prop = False, prop_num = 0.05):
     """
     用来绘制类别变量的条形图
     :param data:待画图的dataframe
     :param col_name:给定需要画图的列名，给定数值
     :param color_index:指定作图颜色在调色板上的序列号，如果为空则默认为0(蓝色)
     :param order_list:指定类别顺序，如果为空则按照统计后从高到低的顺序作图
+    :param if_prop:bool,指定是否展示相对频率。False：绝对频率；True：相对频率。
+    :param prop_num:float,指定相对频率画图时，纵坐标刻度线标注份数或者区间长度，小于1为区间长度，大于等于1为份数。
     :return:one ,plotting
     """
     base_color = sns.color_palette()[color_index]
+    if if_prop:
+        n_points = data.shape[0]
+        # 最多类别出现的次数
+        max_count = data[col_name].value_counts().max()
+        max_prop = max_count / n_points  # 最大比例
+
+        # 生成比例
+        if prop_num < 1:
+            unit_prop = prop_num
+        else:
+            unit_prop = max_prop / prop_num
+        tick_props = np.arange(0, max_prop, unit_prop)
+        tick_names = ['{:0.2f}'.format(v) for v in tick_props]
     if order_list:
         try:
             # 根据pandas版本，pandas 为 0.20.3 或更低版本这里可能会报错
@@ -94,10 +109,20 @@ def super_count_plot(data,col_name,color_index=0,order_list=None):
             data[col_name] = data[col_name].astype(ordered_cat)
         except:
             data[col_name] = data[col_name].astype('category', ordered=True, categories=order_list)
-        sns.countplot(data=data, x=col_name, color=base_color)
+        if not if_prop:
+            sns.countplot(data=data, x=col_name, color=base_color)
+        else:
+            sns.countplot(data=data, x=col_name, color=base_color)
+            plt.yticks(tick_props * n_points, tick_names)
+            plt.ylabel('proportion')
     else:
         cat_order = data[col_name].value_counts().index
-        sns.countplot(data=data, x=col_name, color=base_color, order=cat_order)
+        if not if_prop:
+            sns.countplot(data=data, x=col_name, color=base_color, order=cat_order)
+        else:
+            sns.countplot(data=data, x=col_name, color=base_color, order=cat_order)
+            plt.yticks(tick_props * n_points, tick_names)
+            plt.ylabel('proportion')
 
 
 if __name__ == '__main__':
@@ -114,3 +139,4 @@ if __name__ == '__main__':
     # sns.countplot(data=df, x='xb', color=1)
     super_count_plot(df1, col_name='xb', color_index=2, order_list=[1, 0])
     super_count_plot(df1, col_name='xb', color_index=2)
+    super_count_plot(df1, col_name='xb', color_index=2, order_list=[1, 0],if_prop=True)
